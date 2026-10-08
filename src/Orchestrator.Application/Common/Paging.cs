@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Orchestrator.Application.Common;
 
-/// <summary>Normalised paging parameters (page >= 1, 1 <= pageSize <= 100).</summary>
+/// <summary>Normalised paging parameters (page at least 1, pageSize between 1 and 100).</summary>
 public sealed record PageRequest(int Page, int PageSize)
 {
     public const int DefaultPageSize = 20;
