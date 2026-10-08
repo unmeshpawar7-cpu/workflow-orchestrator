@@ -55,9 +55,9 @@ public sealed class ApiKeyOptions
         options.Keys.All(k =>
             !string.IsNullOrWhiteSpace(k.Name)
             && k.KeyHash.Length == 64
-            && k.KeyHash.All(Uri.IsHexDigit)
+            && k.KeyHash.All(c => Uri.IsHexDigit(c))
             && k.Roles.Count > 0
-            && k.Roles.All(Roles.All.Contains));
+            && k.Roles.All(role => Roles.All.Contains(role)));
 }
 
 /// <summary>Constant-time matching of a presented key against the configured digests.</summary>

@@ -10,6 +10,8 @@ namespace Orchestrator.Domain.Workflows;
 /// </summary>
 public sealed class RetryPolicy
 {
+    private static readonly Func<double> SharedRandom = () => Random.Shared.NextDouble();
+
     private readonly RetrySettings _settings;
     private readonly TimeProvider _timeProvider;
     private readonly Func<double> _randomSource;
@@ -18,7 +20,7 @@ public sealed class RetryPolicy
     {
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
         _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
-        _randomSource = randomSource ?? Random.Shared.NextDouble;
+        _randomSource = randomSource ?? SharedRandom;
     }
 
     public RetrySettings Settings => _settings;
