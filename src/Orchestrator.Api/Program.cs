@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
@@ -112,6 +113,10 @@ builder.Services.AddSwaggerGen(options =>
                       + "schedules and dead letters. Authenticate with the X-Api-Key header.",
         License = new OpenApiLicense { Name = "MIT" },
     });
+
+    // Inputs, outputs and handler configs are arbitrary JSON documents.
+    options.MapType<JsonElement>(() => new OpenApiSchema { Description = "Any JSON value." });
+    options.MapType<JsonElement?>(() => new OpenApiSchema { Description = "Any JSON value.", Nullable = true });
 
     foreach (var xmlFile in new[] { "Orchestrator.Api.xml", "Orchestrator.Application.xml" })
     {
