@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>Orchestrator.Domain</RootNamespace>
+    <AssemblyName>Orchestrator.Domain</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Orchestrator.UnitTests" />
+  </ItemGroup>
+
+</Project>

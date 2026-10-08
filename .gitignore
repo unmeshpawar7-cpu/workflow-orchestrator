@@ -1,0 +1,39 @@
+# Build output
+bin/
+obj/
+out/
+publish/
+artifacts/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.swp
+
+# Test / coverage output
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+coverage.cobertura.xml
+
+# Local databases
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+
+# Secrets / environment
+.env
+appsettings.Local.json
+
+# Python tooling (not used by the build)
+.venv/
+__pycache__/
+
+# OS
+.DS_Store
+Thumbs.db
