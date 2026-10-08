@@ -1,0 +1,68 @@
+# Local stack: API (with in-process scheduler + worker), SQL Server 2022 and Redis.
+#   cp .env.example .env   # then set MSSQL_SA_PASSWORD and the API key digests
+#   docker compose up --build
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?set MSSQL_SA_PASSWORD in .env}
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$${MSSQL_SA_PASSWORD}\" -C -Q 'SELECT 1' -b -o /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Orchestrator: "Server=sqlserver,1433;Database=Orchestrator;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;Encrypt=False"
+      Database__ApplyMigrationsOnStartup: "true"
+      Redis__Enabled: "true"
+      Redis__ConnectionString: "redis:6379,abortConnect=false"
+      Swagger__Enabled: "true"
+      Worker__MaxDegreeOfParallelism: ${WORKER_MAX_DEGREE_OF_PARALLELISM:-4}
+      ApiKeys__Keys__0__Name: "local-admin"
+      ApiKeys__Keys__0__KeyHash: ${ADMIN_API_KEY_SHA256:?set ADMIN_API_KEY_SHA256 in .env}
+      ApiKeys__Keys__0__Roles__0: "workflow.admin"
+      ApiKeys__Keys__1__Name: "local-operator"
+      ApiKeys__Keys__1__KeyHash: ${OPERATOR_API_KEY_SHA256:?set OPERATOR_API_KEY_SHA256 in .env}
+      ApiKeys__Keys__1__Roles__0: "workflow.operator"
+      ApiKeys__Keys__2__Name: "local-reader"
+      ApiKeys__Keys__2__KeyHash: ${READER_API_KEY_SHA256:?set READER_API_KEY_SHA256 in .env}
+      ApiKeys__Keys__2__Roles__0: "workflow.reader"
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:8080/health/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  sqlserver-data:
