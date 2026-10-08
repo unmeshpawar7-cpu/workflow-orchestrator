@@ -12,7 +12,9 @@ public sealed class TemplateContext
     public TemplateContext(string? inputJson, IReadOnlyDictionary<string, string?> stepOutputs)
     {
         Input = Parse(inputJson);
-        StepOutputs = stepOutputs.ToDictionary(kv => kv.Key, kv => Parse(kv.Value), StringComparer.Ordinal);
+        StepOutputs = stepOutputs
+            .Where(kv => !string.IsNullOrWhiteSpace(kv.Value))
+            .ToDictionary(kv => kv.Key, kv => Parse(kv.Value), StringComparer.Ordinal);
     }
 
     public JsonNode? Input { get; }
