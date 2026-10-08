@@ -1,0 +1,5 @@
+{
+  "input": { "tenant": "scheduled-canary" },
+  "intervalSeconds": 300,
+  "enabled": true
+}

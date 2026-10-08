@@ -1,0 +1,77 @@
+{
+  "name": "order-fulfilment",
+  "description": "Saga: validate, reserve stock, charge payment, ship, notify. input.paymentMode ('none' or 'fail') drives the simulated payment so one definition shows both the happy path and compensation.",
+  "maxConcurrentRuns": 20,
+  "steps": [
+    {
+      "key": "validate-order",
+      "handler": "transform",
+      "timeoutSeconds": 5,
+      "config": {
+        "source": {
+          "orderId": "{{input.orderId}}",
+          "customerId": "{{input.customerId}}",
+          "amount": "{{input.amount}}",
+          "currency": "{{input.currency}}"
+        }
+      }
+    },
+    {
+      "key": "reserve-inventory",
+      "handler": "transform",
+      "dependsOn": [ "validate-order" ],
+      "config": {
+        "source": {
+          "reservationId": "res-{{steps.validate-order.output.orderId}}",
+          "items": "{{input.items}}"
+        }
+      },
+      "retry": { "maxAttempts": 5, "initialDelayMs": 500, "backoffMultiplier": 2.0, "maxDelayMs": 10000, "jitter": 0.2 },
+      "compensation": {
+        "handler": "log",
+        "config": {
+          "message": "Releasing inventory reservation {{steps.reserve-inventory.output.reservationId}}",
+          "level": "Warning"
+        }
+      }
+    },
+    {
+      "key": "charge-payment",
+      "handler": "fault-injection",
+      "dependsOn": [ "reserve-inventory" ],
+      "timeoutSeconds": 10,
+      "config": {
+        "mode": "{{input.paymentMode}}",
+        "retryable": false,
+        "message": "Payment declined by issuer (simulated)"
+      },
+      "retry": { "maxAttempts": 3, "initialDelayMs": 1000, "backoffMultiplier": 2.0, "maxDelayMs": 15000, "jitter": 0.2 },
+      "compensation": {
+        "handler": "log",
+        "config": {
+          "message": "Refunding {{steps.validate-order.output.amount}} {{steps.validate-order.output.currency}} for order {{steps.validate-order.output.orderId}}",
+          "level": "Warning"
+        }
+      }
+    },
+    {
+      "key": "create-shipment",
+      "handler": "transform",
+      "dependsOn": [ "charge-payment" ],
+      "config": {
+        "source": {
+          "shipmentId": "shp-{{steps.validate-order.output.orderId}}",
+          "reservationId": "{{steps.reserve-inventory.output.reservationId}}"
+        }
+      }
+    },
+    {
+      "key": "notify-customer",
+      "handler": "log",
+      "dependsOn": [ "create-shipment" ],
+      "config": {
+        "message": "Order {{steps.validate-order.output.orderId}} shipped as {{steps.create-shipment.output.shipmentId}}"
+      }
+    }
+  ]
+}

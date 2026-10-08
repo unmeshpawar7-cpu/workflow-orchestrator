@@ -1,0 +1,10 @@
+{
+  "input": {
+    "orderId": "ord-1002",
+    "customerId": "cus-43",
+    "amount": 89.00,
+    "currency": "EUR",
+    "paymentMode": "fail",
+    "items": [ { "sku": "HD-02", "qty": 1 } ]
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "input": {
+    "documentId": "doc-2026-0042",
+    "uri": "s3://inbox/doc-2026-0042.pdf",
+    "pages": 12,
+    "categoryHint": "invoice"
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "name": "document-processing",
+  "description": "Fan-out/fan-in pipeline: ingest, then OCR, thumbnail and classification in parallel branches, then index and notify.",
+  "maxConcurrentRuns": 50,
+  "steps": [
+    {
+      "key": "ingest",
+      "handler": "transform",
+      "config": {
+        "source": { "documentId": "{{input.documentId}}", "pages": "{{input.pages}}", "uri": "{{input.uri}}" }
+      }
+    },
+    {
+      "key": "check-ocr-service",
+      "handler": "http",
+      "dependsOn": [ "ingest" ],
+      "timeoutSeconds": 10,
+      "config": {
+        "method": "GET",
+        "url": "http://localhost:8080/health/live"
+      },
+      "retry": { "maxAttempts": 4, "initialDelayMs": 1000, "backoffMultiplier": 2.0, "maxDelayMs": 8000, "jitter": 0.25 }
+    },
+    {
+      "key": "extract-text",
+      "handler": "delay",
+      "dependsOn": [ "check-ocr-service" ],
+      "timeoutSeconds": 30,
+      "config": { "milliseconds": 400 }
+    },
+    {
+      "key": "generate-thumbnail",
+      "handler": "delay",
+      "dependsOn": [ "ingest" ],
+      "config": { "milliseconds": 250 }
+    },
+    {
+      "key": "classify",
+      "handler": "transform",
+      "dependsOn": [ "ingest" ],
+      "config": {
+        "source": { "category": "{{input.categoryHint}}", "pages": "{{steps.ingest.output.pages}}" },
+        "mappings": { "classification.category": "category", "classification.pageCount": "pages" }
+      }
+    },
+    {
+      "key": "index",
+      "handler": "transform",
+      "dependsOn": [ "extract-text", "generate-thumbnail", "classify" ],
+      "config": {
+        "source": {
+          "documentId": "{{steps.ingest.output.documentId}}",
+          "classification": "{{steps.classify.output.classification}}",
+          "ocrMs": "{{steps.extract-text.output.delayedMs}}",
+          "thumbnailMs": "{{steps.generate-thumbnail.output.delayedMs}}"
+        }
+      }
+    },
+    {
+      "key": "notify",
+      "handler": "log",
+      "dependsOn": [ "index" ],
+      "config": {
+        "message": "Document {{steps.index.output.documentId}} indexed as {{steps.classify.output.classification.category}}"
+      }
+    }
+  ]
+}

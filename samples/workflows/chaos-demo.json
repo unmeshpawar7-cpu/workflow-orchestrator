@@ -1,0 +1,38 @@
+{
+  "name": "chaos-demo",
+  "description": "Uses the fault-injection testing handler to show retries with backoff, a timeout followed by a successful retry, and saga compensation when a step never succeeds.",
+  "maxConcurrentRuns": 5,
+  "steps": [
+    {
+      "key": "flaky-dependency",
+      "handler": "fault-injection",
+      "config": { "mode": "fail", "attempts": 2, "message": "Simulated 503 from a flaky dependency" },
+      "retry": { "maxAttempts": 4, "initialDelayMs": 500, "backoffMultiplier": 2.0, "maxDelayMs": 5000, "jitter": 0.3 }
+    },
+    {
+      "key": "slow-dependency",
+      "handler": "fault-injection",
+      "dependsOn": [ "flaky-dependency" ],
+      "timeoutSeconds": 2,
+      "config": { "mode": "hang", "attempts": 1 },
+      "retry": { "maxAttempts": 3, "initialDelayMs": 0, "backoffMultiplier": 1.0, "maxDelayMs": 0, "jitter": 0.0 }
+    },
+    {
+      "key": "provision-resource",
+      "handler": "log",
+      "dependsOn": [ "slow-dependency" ],
+      "config": { "message": "Provisioned sandbox for {{input.tenant}}" },
+      "compensation": {
+        "handler": "log",
+        "config": { "message": "Deprovisioning sandbox for {{input.tenant}}", "level": "Warning" }
+      }
+    },
+    {
+      "key": "always-broken",
+      "handler": "fault-injection",
+      "dependsOn": [ "provision-resource" ],
+      "config": { "mode": "fail", "message": "This step never succeeds" },
+      "retry": { "maxAttempts": 2, "initialDelayMs": 250, "backoffMultiplier": 2.0, "maxDelayMs": 1000, "jitter": 0.1 }
+    }
+  ]
+}

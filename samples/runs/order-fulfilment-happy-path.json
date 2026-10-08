@@ -1,0 +1,10 @@
+{
+  "input": {
+    "orderId": "ord-1001",
+    "customerId": "cus-42",
+    "amount": 149.90,
+    "currency": "EUR",
+    "paymentMode": "none",
+    "items": [ { "sku": "KB-01", "qty": 1 }, { "sku": "MS-07", "qty": 2 } ]
+  }
+}
