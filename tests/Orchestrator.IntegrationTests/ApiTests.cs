@@ -323,7 +323,7 @@ public sealed class RunApiTests : IClassFixture<OrchestratorApiFactory>
         retry.StatusCode.Should().Be(HttpStatusCode.Accepted);
         (await retry.ReadJsonAsync()).GetProperty("data").GetProperty("status").GetString().Should().Be("Running");
 
-        var ok = await _operator.StartRunAsync(await _admin.CreateWorkflowAsync(Definitions.Simple("retry-ok")));
+        var ok = await _operator.StartRunAsync(await _admin.CreateWorkflowAsync(Definitions.Simple("retry-ok")), new { who = "ok" });
         await _operator.WaitForStatusAsync(ok, "Succeeded");
         (await _operator.PostAsync($"/api/runs/{ok}/retry", content: null)).StatusCode.Should().Be(HttpStatusCode.Conflict);
     }
