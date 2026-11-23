@@ -9,10 +9,10 @@ Asynchronous DAG workflow / task orchestration backend in ASP.NET Core 8 — dur
 ![SQL Server](https://img.shields.io/badge/SQL%20Server-2022-CC2927)
 ![Redis](https://img.shields.io/badge/Redis-7-DC382D)
 
-> **Build status note.** This repository was authored in an environment without the .NET SDK, so nothing here was
-> compiled or executed locally. The GitHub Actions workflow (`restore → build → test → docker build`) is the source of
-> truth for whether the solution builds and the tests pass. No coverage figure is quoted because none has been measured
-> yet; CI collects Cobertura coverage (`XPlat Code Coverage`) as a build artifact.
+> **Build status note.** This repository was authored in an environment without the .NET SDK. The GitHub Actions
+> workflow (`restore → build → test → docker build`) is the source of truth for whether the solution builds and the
+> tests pass; the latest run on `main` builds and passes all 313 tests (see [Testing](#testing)). No coverage figure is
+> quoted yet; CI collects Cobertura coverage (`XPlat Code Coverage`) as a build artifact.
 
 ## Problem
 
@@ -358,8 +358,9 @@ No external services are needed: tests use SQLite and the in-memory lock / idemp
   worker running: 401/403, health, correlation id, OpenAPI generation, versioning, cycle → 400, idempotent replay and
   409, end-to-end run, dead-letter + requeue against a controllable downstream stub, cancel, retry, pagination, schedules.
 
-About 100 test methods (plus theory rows) exist. **They have not been executed yet** — see the build status note above;
-CI reports the real results and coverage.
+**Measured in CI** ([run #3](https://github.com/unmeshpawar7-cpu/workflow-orchestrator/actions/runs/45161505509),
+23 Nov 2026, .NET 8 on `ubuntu-latest`): **297 unit tests (including theory rows) and 16 integration tests passed,
+0 failed**, and the Docker image job succeeded. Coverage is uploaded as the `test-results` artifact.
 
 ## Running Locally
 
