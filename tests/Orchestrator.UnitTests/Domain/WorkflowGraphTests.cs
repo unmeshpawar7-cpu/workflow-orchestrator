@@ -41,15 +41,16 @@ public sealed class WorkflowGraphTests
         result.IsValid.Should().BeFalse();
         var error = result.Errors.Should().ContainSingle(e => e.Code == GraphErrorCodes.Cycle).Subject;
         error.Cycle.Should().NotBeNull();
-        error.Cycle!.First().Should().Be(error.Cycle!.Last());
-        error.Cycle.Should().HaveCount(4).And.Contain(new[] { "a", "b", "c" });
+        var cycle = error.Cycle!;
+        cycle.First().Should().Be(cycle.Last());
+        cycle.Should().HaveCount(4).And.Contain(new[] { "a", "b", "c" });
         error.Message.Should().StartWith("Cycle detected: ");
 
         // Every consecutive pair must be a real "runs before" edge: X -> Y means Y depends on X.
         var dependsOn = new Dictionary<string, string> { ["a"] = "c", ["b"] = "a", ["c"] = "b" };
-        for (var i = 0; i < error.Cycle.Count - 1; i++)
+        for (var i = 0; i < cycle.Count - 1; i++)
         {
-            dependsOn[error.Cycle[i + 1]].Should().Be(error.Cycle[i]);
+            dependsOn[cycle[i + 1]].Should().Be(cycle[i]);
         }
 
         result.TopologicalOrder.Should().BeEmpty();
