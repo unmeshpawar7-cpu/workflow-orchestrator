@@ -11,8 +11,8 @@ Asynchronous DAG workflow / task orchestration backend in ASP.NET Core 8 — dur
 
 > **Build status note.** This repository was authored in an environment without the .NET SDK. The GitHub Actions
 > workflow (`restore → build → test → docker build`) is the source of truth for whether the solution builds and the
-> tests pass; the latest run on `main` builds and passes all 313 tests (see [Testing](#testing)). No coverage figure is
-> quoted yet; CI collects Cobertura coverage (`XPlat Code Coverage`) as a build artifact.
+> tests pass; the latest run on `main` builds and passes all 313 tests with 75.4% line and 78.3% branch coverage (see
+> [Testing](#testing)). CI merges the Cobertura reports with ReportGenerator and prints the summary on every run.
 
 ## Problem
 
@@ -358,9 +358,22 @@ No external services are needed: tests use SQLite and the in-memory lock / idemp
   worker running: 401/403, health, correlation id, OpenAPI generation, versioning, cycle → 400, idempotent replay and
   409, end-to-end run, dead-letter + requeue against a controllable downstream stub, cancel, retry, pagination, schedules.
 
-**Measured in CI** ([run #3](https://github.com/unmeshpawar7-cpu/workflow-orchestrator/actions/runs/45161505509),
+**Measured in CI** ([run #7](https://github.com/unmeshpawar7-cpu/workflow-orchestrator/actions/runs/45168564132),
 23 Nov 2026, .NET 8 on `ubuntu-latest`): **297 unit tests (including theory rows) and 16 integration tests passed,
-0 failed**, and the Docker image job succeeded. Coverage is uploaded as the `test-results` artifact.
+0 failed**, and the Docker image job succeeded.
+
+Merged unit + integration coverage is **75.4% of lines (2,645 / 3,506) and 78.3% of branches (780 / 995)**:
+
+| Assembly | Line coverage |
+|---|---|
+| Orchestrator.Api | 93.5% |
+| Orchestrator.Domain | 92.3% |
+| Orchestrator.Application | 91.6% |
+| Orchestrator.Infrastructure | 37.8% |
+
+Infrastructure is low mainly because the hand-written EF Core migration is never executed (the tests create the schema
+with `EnsureCreated`) and the Redis coordination code is mostly not exercised (the tests use the in-memory lock
+and idempotency implementations).
 
 ## Running Locally
 
