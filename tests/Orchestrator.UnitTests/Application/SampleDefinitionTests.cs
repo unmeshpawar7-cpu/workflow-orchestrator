@@ -32,8 +32,11 @@ public sealed class SampleDefinitionTests
 
         graph.Errors.Should().BeEmpty();
         request.Steps.Select(s => s.Handler).Should().OnlyContain(h => BuiltInHandlers.Contains(h));
+        // Not every sample has compensation steps, and OnlyContain fails on an empty collection,
+        // so assert that no compensation handler is unknown instead.
         request.Steps.Where(s => s.Compensation is not null).Select(s => s.Compensation!.Handler)
-            .Should().OnlyContain(h => BuiltInHandlers.Contains(h));
+            .Where(h => !BuiltInHandlers.Contains(h))
+            .Should().BeEmpty("every compensation handler must be a built-in handler");
     }
 
     private static string FindRepositoryRoot()
