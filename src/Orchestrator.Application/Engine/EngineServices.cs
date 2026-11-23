@@ -128,7 +128,9 @@ public sealed class RunMutator
         _logger = logger;
     }
 
+    /// <param name="runId">Identifier of the run to load, lock and update.</param>
     /// <param name="mutate">Applies the change; return <c>false</c> to abort without saving.</param>
+    /// <param name="cancellationToken">Cancels waiting for the run lock and the database work.</param>
     /// <returns>The saved run, or <c>null</c> when the run does not exist or the mutation aborted.</returns>
     public async Task<WorkflowRun?> MutateAsync(
         Guid runId,
