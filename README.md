@@ -9,10 +9,34 @@ Asynchronous DAG workflow / task orchestration backend in ASP.NET Core 8 — dur
 ![SQL Server](https://img.shields.io/badge/SQL%20Server-2022-CC2927)
 ![Redis](https://img.shields.io/badge/Redis-7-DC382D)
 
-> **Build status note.** This repository was authored in an environment without the .NET SDK. The GitHub Actions
-> workflow (`restore → build → test → docker build`) is the source of truth for whether the solution builds and the
-> tests pass; the latest run on `main` builds and passes all 313 tests with 75.4% line and 78.3% branch coverage (see
-> [Testing](#testing)). CI merges the Cobertura reports with ReportGenerator and prints the summary on every run.
+[At a glance](#at-a-glance) · [Phases](#project-phases) · [Problem](#problem) · [Architecture](#architecture) · [Features](#key-features) · [API](#api-endpoints) · [Security](#security) · [Testing](#testing) · [Run locally](#running-locally) · [Docker](#docker)
+
+## At a glance
+
+| Area | Summary |
+|---|---|
+| **What it does** | Runs multi-step workflows (DAGs) reliably: survives crashes, retries with backoff, undoes completed steps when a later one fails (saga), runs schedules and parks unrecoverable runs as dead letters |
+| **Stack** | .NET 8 · ASP.NET Core · EF Core 8 · SQL Server 2022 (work queue) · Redis (coordination) · Serilog · xUnit |
+| **Reliability** | Leased step claims with fencing tokens · exponential backoff with jitter · idempotent run creation · append-only execution history |
+| **Quality** | 313 tests passing in CI (297 unit + 16 integration) · 75.4% line / 78.3% branch coverage |
+| **Security** | API keys stored as SHA-256 digests · role hierarchy admin ⊇ operator ⊇ reader · rate limiting · SSRF guard |
+| **Run it** | `cp .env.example .env && docker compose up --build` → Swagger at `http://localhost:8080/swagger` |
+
+## Project phases
+
+How the project was built, from the problem to a deployable service. Each phase links to the details below.
+
+| # | Phase | What was delivered | Details |
+|---|---|---|---|
+| 1 | **Problem & requirements** | Hand-rolled chains of service calls lose work when a process crashes, retry inconsistently, cannot undo partial work and leave no audit trail | [Problem](#problem) |
+| 2 | **Design** | Clean Architecture; the database is the queue (no broker); compare-and-swap claims instead of locks; 4 ADRs | [Architecture](#architecture) · [ADRs](docs/adr) |
+| 3 | **Workflow model** | Immutable, versioned DAG definitions validated up front, including cycle detection that reports the cycle path; step outputs as inputs through templates | [Key Features](#key-features) |
+| 4 | **Execution engine** | Coordinator and workers with leased claims, heartbeats, per-attempt timeouts, cancellation, retries and lease recovery | [Execution semantics](docs/execution-semantics.md) |
+| 5 | **Failure handling** | Saga compensation in reverse topological order, dead letters with requeue, forward retry of failed runs | [Architecture](#architecture) |
+| 6 | **API & operations** | REST API, schedules, idempotency keys, statistics, health checks, correlation ids | [API Endpoints](#api-endpoints) |
+| 7 | **Security** | Hashed API keys with fixed-time comparison, role policies, rate limits, SSRF guard, input limits | [Security](#security) |
+| 8 | **Testing** | 313 tests, including engine tests on SQLite and full-host integration tests; 75.4% line coverage measured in CI | [Testing](#testing) |
+| 9 | **Delivery** | Multi-stage non-root Docker image, docker compose with SQL Server and Redis, GitHub Actions (build, test, coverage summary, Docker build) | [Docker](#docker) |
 
 ## Problem
 
@@ -476,3 +500,7 @@ curl -s -X POST http://localhost:8080/api/workflows/<definitionId>/runs \
 - **Trade-offs I would revisit at scale**: per-tick candidate queries are simple `TOP n` selects (fine for hundreds of
   concurrent steps, not for tens of thousands); `MaxConcurrentRuns` is a soft limit when several schedulers race; the
   in-memory coordination fallbacks are single-instance only.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
